@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="tr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DeutschABC - İnteraktif Almanca Alfabe</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti for Achievements -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter & SF Pro fallback -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=SF+Pro+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        apple: {
+                            blue: '#007AFF',
+                            green: '#34C759',
+                            orange: '#FF9500',
+                            red: '#FF3B30',
+                            purple: '#AF52DE',
+                            indigo: '#5856D6',
+                            teal: '#30B0C7',
+                            cardBg: 'rgba(255, 255, 255, 0.8)',
+                            cardBgDark: 'rgba(30, 41, 59, 0.7)',
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)',
+                        'glass-hover': '0 12px 40px 0 rgba(0, 0, 0, 0.15)',
+                        'apple-glow': '0 0 20px rgba(0, 122, 255, 0.25)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #F6F8FD 0%, #E9EEF9 50%, #E2E8F0 100%);
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .dark body {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #090D16 100%);
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px -10px rgba(0, 122, 255, 0.25);
+        }
+
+        /* Apple Spring Animations */
+        .spring-bounce {
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .spring-bounce:active {
+            transform: scale(0.95);
+        }
+
+        /* Card flip for memory game */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+
+        /* Pulse glow animation for practice audio */
+        @keyframes audioGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 122, 255, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(0, 122, 255, 0.8); }
+        }
+        .audio-playing {
+            animation: audioGlow 1.2s infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-800 dark:text-slate-100 antialiased flex flex-col min-h-screen pb-20 md:pb-6">
+
+    <!-- Apple Style Dynamic Header -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-200/50 dark:border-slate-800/50 px-4 py-3 shadow-sm">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            
+            <!-- App Logo & Title -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('alphabet')">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-blue-500/20 spring-bounce">
+                    Ä
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <h1 class="font-bold text-lg leading-none tracking-tight">DeutschABC</h1>
+                        <span class="bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">İnteraktif</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Almanca Alfabe & Okunuş Rehbeleri</p>
+                </div>
+            </div>
+
+            <!-- Header Widgets (XP, Streak, Voice Test, Theme) -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- XP Badge -->
+                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-xs sm:text-sm">
+                    <i data-lucide="zap" class="w-4 h-4 fill-amber-500 text-amber-500"></i>
+                    <span id="user-xp">0 XP</span>
+                </div>
+
+                <!-- Streak Badge -->
+                <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 dark:bg-orange-500/20 border border-orange-500/30 text-orange-600 dark:text-orange-400 font-bold text-xs sm:text-sm">
+                    <i data-lucide="flame" class="w-4 h-4 fill-orange-500 text-orange-500"></i>
+                    <span id="user-streak">1 Gün</span>
+                </div>
+
+                <!-- Audio Speed Selector -->
+                <button id="speed-toggle-btn" onclick="toggleAudioSpeed()" class="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-200/60 dark:bg-slate-800 border border-slate-300/50 dark:border-slate-700 text-xs font-semibold hover:bg-slate-300/50 transition">
+                    <i data-lucide="gauge" class="w-3.5 h-3.5"></i>
+                    <span id="speed-label">1.0x</span>
+                </button>
+
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleDarkMode()" class="p-2 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300/50 dark:hover:bg-slate-700 transition spring-bounce" title="Karanlık / Aydınlık Mod">
+                    <i data-lucide="moon" id="theme-icon-moon" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="sun" id="theme-icon-sun" class="w-4 h-4 block dark:hidden text-amber-500"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="max-w-6xl mx-auto w-full px-4 pt-4 sm:pt-6 flex-1 flex flex-col">
+
+        <!-- Apple Segmented Control / Navigation Pills (Desktop & Tablet) -->
+        <div class="mb-6 flex justify-center">
+            <div class="inline-flex p-1.5 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-300/50 dark:border-slate-700/50 shadow-inner w-full max-w-xl overflow-x-auto">
+                <button id="tab-btn-alphabet" onclick="switchTab('alphabet')" class="tab-btn flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    <span>Alfabe</span>
+                </button>
+                <button id="tab-btn-rules" onclick="switchTab('rules')" class="tab-btn flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    <span>Ses Kuralları</span>
+                </button>
+                <button id="tab-btn-practice" onclick="switchTab('practice')" class="tab-btn flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                    <span>Egzersizler</span>
+                </button>
+                <button id="tab-btn-stats" onclick="switchTab('stats')" class="tab-btn flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="trophy" class="w-4 h-4"></i>
+                    <span>Başarılar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 1: ALPHABET GRID VIEW -->
+        <section id="section-alphabet" class="tab-content block space-y-6 animate-fade-in">
+            
+            <!-- Category Filter Pills & Search -->
+            <div class="glass-panel p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                <!-- Filter Buttons -->
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                    <button onclick="filterLetters('all')" id="filter-all" class="filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold transition bg-blue-600 text-white shadow-sm">Tümü (30)</button>
+                    <button onclick="filterLetters('standard')" id="filter-standard" class="filter-btn px-3.5 py-1.5 rounded-full text-xs font-medium transition bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">Temel Harfler (26)</button>
+                    <button onclick="filterLetters('special')" id="filter-special" class="filter-btn px-3.5 py-1.5 rounded-full text-xs font-medium transition bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700">Özel Harfler (Ä,Ö,Ü,ß)</button>
+                </div>
+
+                <!-- Info summary -->
+                <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <span class="flex items-center gap-1"><i data-lucide="volume-2" class="w-3.5 h-3.5 text-blue-500"></i> Kartlara tıklayarak dinleyin</span>
+                    <span id="learned-counter-badge" class="font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800">0/30 Öğrenildi</span>
+                </div>
+            </div>
+
+            <!-- Letters Grid -->
+            <div id="letters-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3.5 sm:gap-4">
+                <!-- Dynamic Letter Cards Rendered via JS -->
+            </div>
+        </section>
+
+        <!-- SECTION 2: GERMAN SOUND RULES & PRONUNCIATION CHEATSHEET -->
+        <section id="section-rules" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-3xl space-y-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                            <i data-lucide="sparkles" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold">Almanca Okunuş ve Ses Birleşimleri</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Almanca okurken en çok karşılaşılan harf çiftleri ve Türkçe karşılıkları</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diphthongs & Special Combinations Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="sound-rules-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: INTERACTIVE EXERCISES & PRACTICE GAMES -->
+        <section id="section-practice" class="tab-content hidden space-y-6">
+            
+            <!-- Game Mode Switcher -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button onclick="startPracticeMode('audio')" id="mode-btn-audio" class="practice-mode-card p-4 rounded-2xl border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-left transition hover:shadow-md spring-bounce">
+                    <div class="w-8 h-8 rounded-xl bg-blue-500 text-white flex items-center justify-center mb-2">
+                        <i data-lucide="headphones" class="w-4 h-4"></i>
+                    </div>
+                    <div class="font-bold text-sm">Sesli Harf Testi</div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400">Sesi dinle, harfi seç</div>
+                </button>
+
+                <button onclick="startPracticeMode('word')" id="mode-btn-word" class="practice-mode-card p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 text-left transition hover:shadow-md spring-bounce">
+                    <div class="w-8 h-8 rounded-xl bg-purple-500 text-white flex items-center justify-center mb-2">
+                        <i data-lucide="spell-check" class="w-4 h-4"></i>
+                    </div>
+                    <div class="font-bold text-sm">Eksik Harfi Bul</div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400">Kelimeyi tamamla</div>
+                </button>
+
+                <button onclick="startPracticeMode('match')" id="mode-btn-match" class="practice-mode-card p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 text-left transition hover:shadow-md spring-bounce">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center mb-2">
+                        <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                    </div>
+                    <div class="font-bold text-sm">Eşleştirme</div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400">Harf ve Okunuş</div>
+                </button>
+
+                <button onclick="startPracticeMode('memory')" id="mode-btn-memory" class="practice-mode-card p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 text-left transition hover:shadow-md spring-bounce">
+                    <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center mb-2">
+                        <i data-lucide="grid" class="w-4 h-4"></i>
+                    </div>
+                    <div class="font-bold text-sm">Hafıza Kartları</div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400">Eşleşen kartları çevir</div>
+                </button>
+            </div>
+
+            <!-- Game Arena Panel -->
+            <div id="game-arena" class="glass-panel p-6 sm:p-8 rounded-3xl min-h-[380px] flex flex-col justify-center items-center text-center relative overflow-hidden shadow-md">
+                <!-- Dynamic Game Content loaded here -->
+            </div>
+        </section>
+
+        <!-- SECTION 4: PROGRESS & ACHIEVEMENTS -->
+        <section id="section-stats" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Card 1: Progress Circle -->
+                <div class="glass-panel p-6 rounded-3xl flex flex-col items-center justify-center text-center space-y-3">
+                    <div class="relative w-32 h-32 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-slate-200 dark:text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path id="progress-circle-path" class="text-blue-600 transition-all duration-1000 ease-out" stroke-dasharray="0, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="absolute flex flex-col items-center">
+                            <span id="progress-percent-text" class="text-2xl font-black">0%</span>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Tamamlandı</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base">Alfabe Hakimiyeti</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">30 Almanca harften <span id="stats-learned-count">0</span> tanesini öğrendiniz.</p>
+                    </div>
+                </div>
+
+                <!-- Card 2: Quick Stats -->
+                <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between space-y-4">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-500"></i> İstatistiklerim
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-2.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Çözülen Soru:</span>
+                            <span id="stat-total-questions" class="font-black text-sm">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Doğruluk Oranı:</span>
+                            <span id="stat-accuracy" class="font-black text-sm text-emerald-600 dark:text-emerald-400">100%</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Süreç Seviyesi:</span>
+                            <span id="stat-level" class="font-black text-sm text-blue-600 dark:text-blue-400">Acemi (A1.1)</span>
+                        </div>
+                    </div>
+
+                    <button onclick="resetUserProgress()" class="text-xs text-red-500 hover:text-red-600 font-semibold underline text-center w-full">İlerlemeyi Sıfırla</button>
+                </div>
+
+                <!-- Card 3: Badges & Achievements -->
+                <div class="glass-panel p-6 rounded-3xl space-y-3 md:col-span-1">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                        <i data-lucide="award" class="w-5 h-5 text-amber-500"></i> Rozetler
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2.5" id="badges-container">
+                        <!-- Badges rendered via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Apple Style Dynamic Letter Detail Modal -->
+    <div id="letter-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div id="modal-content" class="glass-panel bg-white/90 dark:bg-slate-900/90 max-w-md w-full rounded-3xl p-6 shadow-2xl border border-white/40 dark:border-slate-700/50 transform scale-95 transition-all duration-300 relative">
+            
+            <!-- Close Button -->
+            <button onclick="closeLetterModal()" class="absolute top-4 right-4 p-2 rounded-full bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 transition spring-bounce">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Modal Header / Large Letter -->
+            <div class="text-center space-y-3 mb-6">
+                <div class="inline-flex items-center justify-center w-28 h-28 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold text-6xl shadow-xl shadow-blue-500/30 relative group">
+                    <span id="modal-letter-title">A a</span>
+                    <!-- Big Play Button Overlay -->
+                    <button onclick="playModalSound()" class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition rounded-3xl text-white">
+                        <i data-lucide="volume-2" class="w-10 h-10"></i>
+                    </button>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-center gap-2">
+                        <span id="modal-letter-phonetic" class="text-lg font-bold text-blue-600 dark:text-blue-400">"Ah"</span>
+                        <span id="modal-letter-tag" class="text-xs bg-slate-200 dark:bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-600 dark:text-slate-300 font-semibold">Temel Harf</span>
+                    </div>
+                    <p id="modal-letter-tr-note" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Türkçe 'A' sesi ile aynı okunur.</p>
+                </div>
+            </div>
+
+            <!-- Main Example Card -->
+            <div class="p-4 rounded-2xl bg-blue-50/70 dark:bg-slate-800/60 border border-blue-100 dark:border-slate-700/50 space-y-3 mb-6">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Örnek Kelime</span>
+                    <button onclick="playModalWordSound()" class="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline">
+                        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Kelimeyi Dinle
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div id="modal-word-emoji" class="text-4xl p-2 rounded-2xl bg-white dark:bg-slate-700 shadow-sm">🍎</div>
+                    <div>
+                        <div id="modal-word-de" class="text-xl font-extrabold text-slate-800 dark:text-slate-100">Der Apfel</div>
+                        <div id="modal-word-tr" class="text-sm font-medium text-slate-500 dark:text-slate-400">Elma</div>
+                    </div>
+                </div>
+
+                <div id="modal-sentence-box" class="pt-2 border-t border-blue-200/50 dark:border-slate-700/50 text-xs text-slate-600 dark:text-slate-300 italic">
+                    "Der Apfel ist rot." (Elma kırmızıdır.)
+                </div>
+            </div>
+
+            <!-- Actions Footer -->
+            <div class="flex items-center gap-3">
+                <button onclick="playModalSound()" class="flex-1 py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 spring-bounce">
+                    <i data-lucide="volume-2" class="w-4 h-4"></i> Harf Sesi
+                </button>
+
+                <button id="modal-toggle-learned-btn" onclick="toggleLearnedFromModal()" class="py-3 px-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold text-sm hover:bg-emerald-500/20 flex items-center gap-2 spring-bounce">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span id="modal-learned-label">Öğrendim</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar (Apple iOS style) -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 md:hidden glass-panel border-t border-slate-200/50 dark:border-slate-800/50 px-4 py-2">
+        <div class="flex justify-around items-center max-w-sm mx-auto">
+            <button onclick="switchTab('alphabet')" id="mobile-tab-alphabet" class="flex flex-col items-center gap-0.5 text-blue-600 dark:text-blue-400">
+                <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                <span class="text-[10px] font-semibold">Alfabe</span>
+            </button>
+            <button onclick="switchTab('rules')" id="mobile-tab-rules" class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+                <span class="text-[10px] font-semibold">Kurallar</span>
+            </button>
+            <button onclick="switchTab('practice')" id="mobile-tab-practice" class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400">
+                <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+                <span class="text-[10px] font-semibold">Egzersiz</span>
+            </button>
+            <button onclick="switchTab('stats')" id="mobile-tab-stats" class="flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400">
+                <i data-lucide="trophy" class="w-5 h-5"></i>
+                <span class="text-[10px] font-semibold">Başarılar</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* Comprehensive German Alphabet Data Structure */
+        const GERMAN_ALPHABET = [
+            { id: 'a', upper: 'A', lower: 'a', phonetic: 'Ah', ipa: '[a:]', trNote: 'Türkçe \'A\' sesi gibidir.', exampleWord: 'Apfel', article: 'Der', exampleTr: 'Elma', emoji: '🍎', sentence: 'Der Apfel ist rot.', cat: 'standard' },
+            { id: 'b', upper: 'B', lower: 'b', phonetic: 'Be', ipa: '[be:]', trNote: 'Türkçe \'B\' sesi gibidir.', exampleWord: 'Ball', article: 'Der', exampleTr: 'Top', emoji: '⚽', sentence: 'Der Ball rollt schnell.', cat: 'standard' },
+            { id: 'c', upper: 'C', lower: 'c', phonetic: 'Tse', ipa: '[tse:]', trNote: 'A/O/U öncesinde \'K\', E/I öncesinde \'TS\' gibi okunur.', exampleWord: 'Computer', article: 'Der', exampleTr: 'Bilgisayar', emoji: '💻', sentence: 'Der Computer ist neu.', cat: 'standard' },
+            { id: 'd', upper: 'D', lower: 'd', phonetic: 'De', ipa: '[de:]', trNote: 'Türkçe \'D\' sesi gibidir.', exampleWord: 'Drache', article: 'Der', exampleTr: 'Ejderha / Uçurtma', emoji: '🐉', sentence: 'Der Drache fliegt hoch.', cat: 'standard' },
+            { id: 'e', upper: 'E', lower: 'e', phonetic: 'E', ipa: '[e:]', trNote: 'Türkçe \'E\' sesi gibidir.', exampleWord: 'Elefant', article: 'Der', exampleTr: 'Fil', emoji: '🐘', sentence: 'Der Elefant ist groß.', cat: 'standard' },
+            { id: 'f', upper: 'F', lower: 'f', phonetic: 'Ef', ipa: '[ɛf]', trNote: 'Türkçe \'F\' sesi gibidir.', exampleWord: 'Fisch', article: 'Der', exampleTr: 'Balık', emoji: '🐟', sentence: 'Der Fisch schwimmt im Wasser.', cat: 'standard' },
+            { id: 'g', upper: 'G', lower: 'g', phonetic: 'Ge', ipa: '[ge:]', trNote: 'Kelime sonunda bazen hafif sert \'K\' sesi verir.', exampleWord: 'Gitarre', article: 'Die', exampleTr: 'Gitar', emoji: '🎸', sentence: 'Die Gitarre klingt schön.', cat: 'standard' },
+            { id: 'h', upper: 'H', lower: 'h', phonetic: 'Ha', ipa: '[ha:]', trNote: 'Kelime başında \'H\', sesliden sonra ise o sesliyi uzatır.', exampleWord: 'Haus', article: 'Das', exampleTr: 'Ev', emoji: '🏠', sentence: 'Das Haus ist schön.', cat: 'standard' },
+            { id: 'i', upper: 'I', lower: 'i', phonetic: 'I', ipa: '[i:]', trNote: 'Türkçe \'İ\' sesi gibidir.', exampleWord: 'Igel', article: 'Der', exampleTr: 'Kirpi', emoji: '🦔', sentence: 'Der Igel hat Stacheln.', cat: 'standard' },
+            { id: 'j', upper: 'J', lower: 'j', phonetic: 'Yot (Y)', ipa: '[jɔt]', trNote: '⚠️ DİKKAT: Türkçe \'Y\' gibi okunur! (Junge -> Yunge)', exampleWord: 'Jacke', article: 'Die', exampleTr: 'Ceket', emoji: '🧥', sentence: 'Die Jacke ist warm.', cat: 'standard' },
+            { id: 'k', upper: 'K', lower: 'k', phonetic: 'Ka', ipa: '[ka:]', trNote: 'Türkçe \'K\' sesi gibidir.', exampleWord: 'Katze', article: 'Die', exampleTr: 'Kedi', emoji: '🐱', sentence: 'Die Katze schläft.', cat: 'standard' },
+            { id: 'l', upper: 'L', lower: 'l', phonetic: 'El', ipa: '[ɛl]', trNote: 'Türkçe yumuşak \'L\' sesi gibidir.', exampleWord: 'Löwe', article: 'Der', exampleTr: 'Aslan', emoji: '🦁', sentence: 'Der Löwe ist stark.', cat: 'standard' },
+            { id: 'm', upper: 'M', lower: 'm', phonetic: 'Em', ipa: '[ɛm]', trNote: 'Türkçe \'M\' sesi gibidir.', exampleWord: 'Maus', article: 'Die', exampleTr: 'Fare', emoji: '🐭', sentence: 'Die Maus isst Käse.', cat: 'standard' },
+            { id: 'n', upper: 'N', lower: 'n', phonetic: 'En', ipa: '[ɛn]', trNote: 'Türkçe \'N\' sesi gibidir.', exampleWord: 'Nest', article: 'Das', exampleTr: 'Yuva', emoji: '🪹', sentence: 'Das Nest ist im Baum.', cat: 'standard' },
+            { id: 'o', upper: 'O', lower: 'o', phonetic: 'O', ipa: '[o:]', trNote: 'Türkçe \'O\' sesi gibidir.', exampleWord: 'Orange', article: 'Die', exampleTr: 'Portakal', emoji: '🍊', sentence: 'Die Orange ist süß.', cat: 'standard' },
+            { id: 'p', upper: 'P', lower: 'p', phonetic: 'Pe', ipa: '[pe:]', trNote: 'Türkçe \'P\' sesi gibidir.', exampleWord: 'Pinguin', article: 'Der', exampleTr: 'Penguen', emoji: '🐧', sentence: 'Der Pinguin mag Eis.', cat: 'standard' },
+            { id: 'q', upper: 'Q', lower: 'q', phonetic: 'Ku (KV)', ipa: '[ku:]', trNote: 'Her zaman \'Qu\' şeklinde yazılır ve \'KV\' okunur (Quelle -> Kvelle).', exampleWord: 'Qualle', article: 'Die', exampleTr: 'Denizanası', emoji: '🪼', sentence: 'Die Qualle schwimmt.', cat: 'standard' },
+            { id: 'r', upper: 'R', lower: 'r', phonetic: 'Er', ipa: '[ɛʁ]', trNote: 'Almanca boğazdan hafif hırıltılı \'R\' sesidir.', exampleWord: 'Rakete', article: 'Die', exampleTr: 'Roket', emoji: '🚀', sentence: 'Die Rakete fliegt ins All.', cat: 'standard' },
+            { id: 's', upper: 'S', lower: 's', phonetic: 'Es (Z/S)', ipa: '[ɛs]', trNote: 'Kelime başında sesliden önce \'Z\' gibi, sonunda \'S\' gibi okunur.', exampleWord: 'Sonne', article: 'Die', exampleTr: 'Güneş', emoji: '☀️', sentence: 'Die Sonne scheint.', cat: 'standard' },
+            { id: 't', upper: 'T', lower: 't', phonetic: 'Te', ipa: '[te:]', trNote: 'Türkçe \'T\' sesi gibidir.', exampleWord: 'Tiger', article: 'Der', exampleTr: 'Kaplan', emoji: '🐅', sentence: 'Der Tiger ist schnell.', cat: 'standard' },
+            { id: 'u', upper: 'U', lower: 'u', phonetic: 'U', ipa: '[u:]', trNote: 'Türkçe \'U\' sesi gibidir.', exampleWord: 'Uhr', article: 'Die', exampleTr: 'Saat', emoji: '⌚', sentence: 'Die Uhr tickt.', cat: 'standard' },
+            { id: 'v', upper: 'V', lower: 'v', phonetic: 'Fau (F)', ipa: '[faʊ]', trNote: '⚠️ DİKKAT: Almanca öz kelimelerde Türkçe \'F\' okunur! (Vogel -> Fogel)', exampleWord: 'Vogel', article: 'Der', exampleTr: 'Kuş', emoji: '🐦', sentence: 'Der Vogel singt.', cat: 'standard' },
+            { id: 'w', upper: 'W', lower: 'w', phonetic: 'Ve (V)', ipa: '[ve:]', trNote: '⚠️ DİKKAT: Türkçe \'V\' sesi ile tam örtüşür! (Wasser -> Vaser)', exampleWord: 'Wasser', article: 'Das', exampleTr: 'Su', emoji: '💧', sentence: 'Das Wasser ist kalt.', cat: 'standard' },
+            { id: 'x', upper: 'X', lower: 'x', phonetic: 'Iks', ipa: '[ɪks]', trNote: 'Türkçe \'KS\' sesi verir.', exampleWord: 'Xylophon', article: 'Das', exampleTr: 'Ksilofon', emoji: '🎼', sentence: 'Das Xylophon macht Musik.', cat: 'standard' },
+            { id: 'y', upper: 'Y', lower: 'y', phonetic: 'Ypsilon', ipa: '[ˈʏpsilɔn]', trNote: 'Kelimelerde genelde \'Ü\' veya \'İ\' şeklinde okunur.', exampleWord: 'Yoga', article: 'Das', exampleTr: 'Yoga', emoji: '🧘', sentence: 'Yoga macht entspannt.', cat: 'standard' },
+            { id: 'z', upper: 'Z', lower: 'z', phonetic: 'Tset (TS)', ipa: '[tsɛt]', trNote: '⚠️ DİKKAT: Türkçe \'TS\' birleşik sesi gibi okunur! (Zug -> Tsug)', exampleWord: 'Zebra', article: 'Das', exampleTr: 'Zebra', emoji: '🦓', sentence: 'Das Zebra hat Streifen.', cat: 'standard' },
+            
+            /* Special German Umlauts & Eszett */
+            { id: 'ae', upper: 'Ä', lower: 'ä', phonetic: 'A-Umlaut (E)', ipa: '[ɛ:]', trNote: 'Türkçe açık \'E\' sesi gibidir. (Apfel -> Äpfel)', exampleWord: 'Äpfel', article: 'Die', exampleTr: 'Elmalar', emoji: '🍏', sentence: 'Die Äpfel sind lecker.', cat: 'special' },
+            { id: 'oe', upper: 'Ö', lower: 'ö', phonetic: 'O-Umlaut (Ö)', ipa: '[ø:]', trNote: 'Türkçe \'Ö\' sesi ile BİREBİR AYNIDIR!', exampleWord: 'Öl', article: 'Das', exampleTr: 'Yağ', emoji: '🛢️', sentence: 'Das Öl ist wichtig.', cat: 'special' },
+            { id: 'ue', upper: 'Ü', lower: 'ü', phonetic: 'U-Umlaut (Ü)', ipa: '[y:]', trNote: 'Türkçe \'Ü\' sesi ile BİREBİR AYNIDIR!', exampleWord: 'Übung', article: 'Die', exampleTr: 'Egzersiz', emoji: '📝', sentence: 'Übung macht den Meister.', cat: 'special' },
+            { id: 'sz', upper: 'ß', lower: 'ß', phonetic: 'Eszett (Sert SS)', ipa: '[s]', trNote: 'Sadece küçük yazılır, kuvvetli çift \'SS\' gibi okunur.', exampleWord: 'Straße', article: 'Die', exampleTr: 'Sokak / Cadde', emoji: '🛣️', sentence: 'Die Straße ist lang.', cat: 'special' }
+        ];
+
+        /* Special Pronunciation Rules Data */
+        const SOUND_RULES = [
+            { combo: 'EI', sound: 'Ay', example: 'Eis (Ays)', meaning: 'Dondurma / Buz', desc: '\'EI\' birleşimi Türkçe \'AY\' gibi okunur.' },
+            { combo: 'IE', sound: 'Uzun İ', example: 'Lied (Liid)', meaning: 'Şarkı', desc: '\'IE\' birleşimi uzatılarak \'İI\' okunur.' },
+            { combo: 'EU / ÄU', sound: 'Oy', example: 'Eule (Oyle)', meaning: 'Baykuş', desc: '\'EU\' ve \'ÄU\' Türkçe \'OY\' gibi okunur.' },
+            { combo: 'SCH', sound: 'Ş', example: 'Schule (Şule)', meaning: 'Okul', desc: '\'SCH\' 3 harfi Türkçe \'Ş\' sesini verir.' },
+            { combo: 'CH', sound: 'H / Hş', example: 'Ich (İhş) / Buch (Buh)', meaning: 'Ben / Kitap', desc: 'A/O/U sonrası boğazdan H; E/I sonrası ince yumuşak Hş okunur.' },
+            { combo: 'SP / ST', sound: 'Şp / Şt', example: 'Sport (Şport) / Stadt (Ştat)', meaning: 'Spor / Şehir', desc: 'Kelime başında \'SP\' -> ŞP, \'ST\' -> ŞT şeklinde okunur.' },
+            { combo: 'CK', sound: 'Sert K', example: 'Socke (Soke)', meaning: 'Çorap', desc: 'Çift K yerine kullanılır, net ve sert K sesidir.' },
+            { combo: 'TZ', sound: 'TS', example: 'Katze (Katse)', meaning: 'Kedi', desc: '\'TZ\' birleşimi Türkçe sert \'TS\' sesidir.' }
+        ];
+
+        // State variables
+        let appState = {
+            learnedLetters: new Set(JSON.parse(localStorage.getItem('deutsch_learned_v1') || '[]')),
+            xp: parseInt(localStorage.getItem('deutsch_xp_v1') || '0'),
+            streak: parseInt(localStorage.getItem('deutsch_streak_v1') || '1'),
+            audioSpeed: parseFloat(localStorage.getItem('deutsch_speed_v1') || '1.0'),
+            activeFilter: 'all',
+            activeModalLetter: null,
+            totalQuestions: parseInt(localStorage.getItem('deutsch_total_q_v1') || '0'),
+            correctAnswers: parseInt(localStorage.getItem('deutsch_correct_q_v1') || '0'),
+            
+            // Practice Game State
+            practiceMode: 'audio',
+            currentQuestion: null,
+            memoryCards: [],
+            flippedCards: [],
+            matchedPairs: 0
+        };
+
+        // Web Speech API wrapper for native high quality German speech
+        function speakGermanText(text, rate = null) {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Speech synthesis not supported');
+                return;
+            }
+
+            window.speechSynthesis.cancel(); // Stop current playing sound
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'de-DE';
+            utterance.rate = rate || appState.audioSpeed;
+            utterance.pitch = 1.0;
+
+            // Try finding a native German voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const deVoice = voices.find(v => v.lang.includes('de') || v.lang.includes('DE'));
+            if (deVoice) {
+                utterance.voice = deVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Web Audio API tone generator for UI sound effects (Chimes & Clicks)
+        function playAudioEffect(type) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // E5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now); // A3
+                    osc.frequency.exponentialRampToValueAtTime(140, now + 0.2);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'click') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch(e) {
+                // Audio effect fallback
+            }
+        }
+
+        function renderAlphabetGrid() {
+            const container = document.getElementById('letters-grid');
+            container.innerHTML = '';
+
+            const filtered = GERMAN_ALPHABET.filter(item => {
+                if (appState.activeFilter === 'standard') return item.cat === 'standard';
+                if (appState.activeFilter === 'special') return item.cat === 'special';
+                return true;
+            });
+
+            filtered.forEach(item => {
+                const isLearned = appState.learnedLetters.has(item.id);
+                
+                const card = document.createElement('div');
+                card.className = `glass-card p-4 rounded-3xl flex flex-col justify-between cursor-pointer relative group spring-bounce ${isLearned ? 'border-2 border-emerald-500/60 dark:border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/20' : ''}`;
+                
+                card.onclick = () => openLetterModal(item);
+
+                card.innerHTML = `
+                    <!-- Learned Checkmark Badge -->
+                    ${isLearned ? `
+                        <div class="absolute top-3 right-3 text-emerald-500">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 fill-emerald-100 dark:fill-emerald-900"></i>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex flex-col items-center text-center space-y-1 my-1">
+                        <!-- Big Letter Display -->
+                        <div class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100 group-hover:scale-110 transition duration-200">
+                            ${item.upper} <span class="text-2xl font-bold text-slate-400 dark:text-slate-500">${item.lower}</span>
+                        </div>
+                        
+                        <!-- Phonetic Readout -->
+                        <div class="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2.5 py-0.5 rounded-full">
+                            ${item.phonetic}
+                        </div>
+                    </div>
+
+                    <!-- Mini Example Preview Footer -->
+                    <div class="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                        <span class="flex items-center gap-1 font-medium truncate">
+                            <span>${item.emoji}</span>
+                            <span class="truncate">${item.exampleWord}</span>
+                        </span>
+                        
+                        <!-- Audio Play Button -->
+                        <button onclick="event.stopPropagation(); playLetterAudio('${item.upper}', '${item.lower}')" class="p-1.5 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition" title="Sesi Dinle">
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+            updateHeaderAndProgressUI();
+        }
+
+        /* Play audio helper */
+        function playLetterAudio(upper, lower) {
+            playAudioEffect('click');
+            speakGermanText(`${upper}`);
+        }
+
+        function renderRulesTab() {
+            const container = document.getElementById('sound-rules-grid');
+            container.innerHTML = '';
+
+            SOUND_RULES.forEach(rule => {
+                const card = document.createElement('div');
+                card.className = 'glass-card p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex items-start gap-4';
+                card.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md">
+                        ${rule.combo}
+                    </div>
+                    <div class="flex-1 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                Okunuşu: <span class="text-blue-600 dark:text-blue-400">"${rule.sound}"</span>
+                            </h4>
+                            <button onclick="speakGermanText('${rule.example.split(' ')[0]}')" class="p-1.5 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 hover:bg-blue-600 hover:text-white transition">
+                                <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 font-medium">${rule.desc}</p>
+                        <div class="text-xs bg-slate-100 dark:bg-slate-800/80 p-2 rounded-xl text-slate-700 dark:text-slate-300 font-semibold mt-2">
+                            Örnek: <span class="text-indigo-600 dark:text-indigo-400 font-bold">${rule.example}</span> (${rule.meaning})
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function openLetterModal(item) {
+            appState.activeModalLetter = item;
+
+            document.getElementById('modal-letter-title').innerText = `${item.upper} ${item.lower}`;
+            document.getElementById('modal-letter-phonetic').innerText = `"${item.phonetic}"`;
+            document.getElementById('modal-letter-tag').innerText = item.cat === 'special' ? 'Özel Harf / Umlaut' : 'Temel Harf';
+            document.getElementById('modal-letter-tr-note').innerText = item.trNote;
+
+            document.getElementById('modal-word-emoji').innerText = item.emoji;
+            document.getElementById('modal-word-de').innerText = `${item.article} ${item.exampleWord}`;
+            document.getElementById('modal-word-tr').innerText = item.exampleTr;
+            document.getElementById('modal-sentence-box').innerText = `"${item.sentence}"`;
+
+            updateModalLearnedBtn();
+
+            const modal = document.getElementById('letter-modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modalContent.classList.remove('scale-95');
+            modalContent.classList.add('scale-100');
+
+            // Auto-play sound when modal opens
+            setTimeout(() => {
+                speakGermanText(item.upper);
+            }, 150);
+        }
+
+        function closeLetterModal() {
+            const modal = document.getElementById('letter-modal');
+            const modalContent = document.getElementById('modal-content');
+
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function playModalSound() {
+            if (appState.activeModalLetter) {
+                speakGermanText(appState.activeModalLetter.upper);
+            }
+        }
+
+        function playModalWordSound() {
+            if (appState.activeModalLetter) {
+                speakGermanText(appState.activeModalLetter.exampleWord);
+            }
+        }
+
+        function updateModalLearnedBtn() {
+            if (!appState.activeModalLetter) return;
+            const isLearned = appState.learnedLetters.has(appState.activeModalLetter.id);
+            const btn = document.getElementById('modal-toggle-learned-btn');
+            const label = document.getElementById('modal-learned-label');
+
+            if (isLearned) {
+                btn.className = "py-3 px-4 rounded-2xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 flex items-center gap-2 spring-bounce shadow-md shadow-emerald-500/20";
+                label.innerText = "Öğrenildi ✓";
+            } else {
+                btn.className = "py-3 px-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold text-sm hover:bg-emerald-500/20 flex items-center gap-2 spring-bounce";
+                label.innerText = "Öğrendim Olarak İşaretle";
+            }
+        }
+
+        function toggleLearnedFromModal() {
+            if (!appState.activeModalLetter) return;
+            const id = appState.activeModalLetter.id;
+            
+            if (appState.learnedLetters.has(id)) {
+                appState.learnedLetters.delete(id);
+            } else {
+                appState.learnedLetters.add(id);
+                addXP(10);
+                playAudioEffect('correct');
+                confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+            }
+
+            saveUserData();
+            updateModalLearnedBtn();
+            renderAlphabetGrid();
+        }
+
+        function startPracticeMode(mode) {
+            appState.practiceMode = mode;
+            
+            // Highlight active game mode button
+            document.querySelectorAll('.practice-mode-card').forEach(btn => {
+                btn.className = "practice-mode-card p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-800/70 text-left transition hover:shadow-md spring-bounce";
+            });
+
+            const activeBtn = document.getElementById(`mode-btn-${mode}`);
+            if (activeBtn) {
+                activeBtn.className = "practice-mode-card p-4 rounded-2xl border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-left transition hover:shadow-md spring-bounce shadow-sm";
+            }
+
+            const arena = document.getElementById('game-arena');
+            arena.innerHTML = '';
+
+            if (mode === 'audio') {
+                renderAudioQuizQuestion();
+            } else if (mode === 'word') {
+                renderFillInBlankQuestion();
+            } else if (mode === 'match') {
+                renderMatchingGame();
+            } else if (mode === 'memory') {
+                initMemoryGame();
+            }
+        }
+
+        /* GAME 1: AUDIO QUIZ */
+        function renderAudioQuizQuestion() {
+            const arena = document.getElementById('game-arena');
+            
+            // Pick a random German letter
+            const target = GERMAN_ALPHABET[Math.floor(Math.random() * GERMAN_ALPHABET.length)];
+            
+            // Pick 3 distractor letters
+            const distractors = GERMAN_ALPHABET.filter(item => item.id !== target.id)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3);
+            
+            const options = [target, ...distractors].sort(() => 0.5 - Math.random());
+            appState.currentQuestion = { target, options };
+
+            arena.innerHTML = `
+                <div class="max-w-md w-full space-y-6">
+                    <div>
+                        <span class="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950 px-3 py-1 rounded-full uppercase tracking-wider">Sesli Test</span>
+                        <h3 class="text-xl font-extrabold mt-2">Duyduğun Almanca Harf Hangisi?</h3>
+                    </div>
+
+                    <!-- Audio Play Button -->
+                    <button onclick="speakGermanText('${target.upper}')" class="w-24 h-24 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30 spring-bounce hover:scale-105 transition audio-playing">
+                        <i data-lucide="volume-2" class="w-10 h-10"></i>
+                    </button>
+                    <p class="text-xs text-slate-500">Sesi tekrar dinlemek için mavi butona basınız.</p>
+
+                    <!-- Option Cards -->
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        ${options.map(opt => `
+                            <button onclick="checkAudioAnswer('${opt.id}')" class="option-btn p-4 rounded-2xl glass-card font-extrabold text-2xl text-slate-800 dark:text-slate-100 hover:border-blue-500 spring-bounce">
+                                ${opt.upper} ${opt.lower}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+
+            // Auto speak question letter
+            setTimeout(() => speakGermanText(target.upper), 300);
+        }
+
+        function checkAudioAnswer(selectedId) {
+            appState.totalQuestions++;
+            const isCorrect = selectedId === appState.currentQuestion.target.id;
+
+            if (isCorrect) {
+                appState.correctAnswers++;
+                addXP(15);
+                playAudioEffect('correct');
+                confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+                showGameFeedback(true, `Tebrikler! Doğru Cevap: ${appState.currentQuestion.target.upper} (${appState.currentQuestion.target.phonetic})`, () => renderAudioQuizQuestion());
+            } else {
+                playAudioEffect('wrong');
+                showGameFeedback(false, `Yanlış! Doğru Harf: ${appState.currentQuestion.target.upper} (${appState.currentQuestion.target.phonetic})`, () => renderAudioQuizQuestion());
+            }
+            saveUserData();
+        }
+
+        /* GAME 2: FILL IN THE BLANK WORD */
+        function renderFillInBlankQuestion() {
+            const arena = document.getElementById('game-arena');
+            const target = GERMAN_ALPHABET[Math.floor(Math.random() * GERMAN_ALPHABET.length)];
+            
+            // Mask the letter in example word
+            const word = target.exampleWord;
+            const targetChar = word.charAt(0);
+            const maskedWord = '_' + word.slice(1);
+
+            // Distractor choices
+            const distractors = GERMAN_ALPHABET.filter(i => i.upper !== target.upper)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3);
+            const options = [target, ...distractors].sort(() => 0.5 - Math.random());
+
+            appState.currentQuestion = { target, options };
+
+            arena.innerHTML = `
+                <div class="max-w-md w-full space-y-6">
+                    <div>
+                        <span class="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-950 px-3 py-1 rounded-full uppercase tracking-wider">Kelime Tamamlama</span>
+                        <h3 class="text-xl font-extrabold mt-2">Eksik Harfi Tamamla</h3>
+                    </div>
+
+                    <div class="p-6 rounded-3xl bg-purple-50/50 dark:bg-slate-800/60 border border-purple-200/50 dark:border-slate-700/50 space-y-2">
+                        <div class="text-5xl mb-2">${target.emoji}</div>
+                        <div class="text-3xl font-black tracking-widest text-purple-700 dark:text-purple-300">
+                            ${target.article} <span class="underline decoration-purple-500 font-extrabold text-blue-600">${maskedWord}</span>
+                        </div>
+                        <div class="text-sm text-slate-500 font-medium">Anlamı: ${target.exampleTr}</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        ${options.map(opt => `
+                            <button onclick="checkWordAnswer('${opt.upper}')" class="p-4 rounded-2xl glass-card font-extrabold text-2xl text-slate-800 dark:text-slate-100 hover:border-purple-500 spring-bounce">
+                                ${opt.upper}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function checkWordAnswer(selectedUpper) {
+            appState.totalQuestions++;
+            const isCorrect = selectedUpper === appState.currentQuestion.target.upper;
+
+            if (isCorrect) {
+                appState.correctAnswers++;
+                addXP(15);
+                playAudioEffect('correct');
+                speakGermanText(appState.currentQuestion.target.exampleWord);
+                confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+                showGameFeedback(true, `Harika! ${appState.currentQuestion.target.article} ${appState.currentQuestion.target.exampleWord}`, () => renderFillInBlankQuestion());
+            } else {
+                playAudioEffect('wrong');
+                showGameFeedback(false, `Doğru cevap ${appState.currentQuestion.target.upper} olmalıydı.`, () => renderFillInBlankQuestion());
+            }
+            saveUserData();
+        }
+
+        /* GAME 3: MATCHING GAME */
+        function renderMatchingGame() {
+            const arena = document.getElementById('game-arena');
+            const items = [...GERMAN_ALPHABET].sort(() => 0.5 - Math.random()).slice(0, 4);
+            
+            const leftList = [...items].sort(() => 0.5 - Math.random());
+            const rightList = [...items].sort(() => 0.5 - Math.random());
+
+            let selectedLeft = null;
+            let selectedRight = null;
+
+            arena.innerHTML = `
+                <div class="max-w-lg w-full space-y-6">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-3 py-1 rounded-full uppercase tracking-wider">Eşleştirme Oyunu</span>
+                        <h3 class="text-xl font-extrabold mt-2">Harfleri Okunuşları ile Eşleştir</h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4" id="matching-grid">
+                        <div class="space-y-2" id="matching-left-col">
+                            ${leftList.map(item => `
+                                <button onclick="selectMatchItem('left', '${item.id}', this)" class="match-left-btn w-full p-3.5 rounded-2xl glass-card font-extrabold text-xl text-center border-2 border-transparent hover:border-emerald-500 spring-bounce">
+                                    ${item.upper} ${item.lower}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="space-y-2" id="matching-right-col">
+                            ${rightList.map(item => `
+                                <button onclick="selectMatchItem('right', '${item.id}', this)" class="match-right-btn w-full p-3.5 rounded-2xl glass-card font-bold text-sm text-center border-2 border-transparent hover:border-emerald-500 spring-bounce">
+                                    "${item.phonetic}"
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+
+            window.matchState = { selectedLeft: null, selectedRight: null, matchedCount: 0, total: items.length };
+        }
+
+        function selectMatchItem(side, id, el) {
+            playAudioEffect('click');
+            
+            if (side === 'left') {
+                document.querySelectorAll('.match-left-btn').forEach(b => b.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950'));
+                el.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950');
+                window.matchState.selectedLeft = { id, el };
+            } else {
+                document.querySelectorAll('.match-right-btn').forEach(b => b.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950'));
+                el.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950');
+                window.matchState.selectedRight = { id, el };
+            }
+
+            // Check if both selected
+            if (window.matchState.selectedLeft && window.matchState.selectedRight) {
+                appState.totalQuestions++;
+                if (window.matchState.selectedLeft.id === window.matchState.selectedRight.id) {
+                    // Match found!
+                    appState.correctAnswers++;
+                    addXP(10);
+                    playAudioEffect('correct');
+                    
+                    window.matchState.selectedLeft.el.disabled = true;
+                    window.matchState.selectedRight.el.disabled = true;
+                    window.matchState.selectedLeft.el.className = "w-full p-3.5 rounded-2xl bg-emerald-500 text-white font-extrabold text-xl opacity-60";
+                    window.matchState.selectedRight.el.className = "w-full p-3.5 rounded-2xl bg-emerald-500 text-white font-bold text-sm opacity-60";
+
+                    window.matchState.selectedLeft = null;
+                    window.matchState.selectedRight = null;
+                    window.matchState.matchedCount++;
+
+                    if (window.matchState.matchedCount === window.matchState.total) {
+                        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+                        showGameFeedback(true, "Tebrikler! Tüm eşleştirmeleri doğru tamamladınız!", () => renderMatchingGame());
+                    }
+                } else {
+                    playAudioEffect('wrong');
+                    setTimeout(() => {
+                        if (window.matchState.selectedLeft) window.matchState.selectedLeft.el.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950');
+                        if (window.matchState.selectedRight) window.matchState.selectedRight.el.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950');
+                        window.matchState.selectedLeft = null;
+                        window.matchState.selectedRight = null;
+                    }, 400);
+                }
+                saveUserData();
+            }
+        }
+
+        /* GAME 4: MEMORY CARD FLIP */
+        function initMemoryGame() {
+            const arena = document.getElementById('game-arena');
+            const items = [...GERMAN_ALPHABET].sort(() => 0.5 - Math.random()).slice(0, 4);
+            
+            // Create 8 cards (4 letter cards + 4 emoji/word cards)
+            let cards = [];
+            items.forEach(item => {
+                cards.push({ id: item.id, type: 'letter', content: `${item.upper} ${item.lower}`, item });
+                cards.push({ id: item.id, type: 'word', content: `${item.emoji} ${item.exampleWord}`, item });
+            });
+
+            cards = cards.sort(() => 0.5 - Math.random());
+            appState.memoryCards = cards;
+            appState.flippedCards = [];
+            appState.matchedPairs = 0;
+
+            arena.innerHTML = `
+                <div class="max-w-md w-full space-y-6">
+                    <div>
+                        <span class="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-3 py-1 rounded-full uppercase tracking-wider">Hafıza Kartları</span>
+                        <h3 class="text-xl font-extrabold mt-2">Kartları Çevir ve Eşleşenleri Bul</h3>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2.5 sm:gap-3" id="memory-cards-grid">
+                        ${cards.map((c, idx) => `
+                            <div onclick="flipMemoryCard(${idx})" id="mem-card-${idx}" class="perspective-1000 h-24 cursor-pointer spring-bounce">
+                                <div class="mem-card-inner transform-style-3d transition-transform duration-300 relative w-full h-full rounded-2xl glass-panel shadow-sm flex items-center justify-center text-center p-2 font-bold text-lg">
+                                    <!-- Card Front (Hidden) -->
+                                    <div class="absolute inset-0 bg-gradient-to-tr from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center text-white text-2xl font-black backface-hidden">
+                                        ?
+                                    </div>
+                                    <!-- Card Back (Content) -->
+                                    <div class="absolute inset-0 bg-white dark:bg-slate-800 border-2 border-amber-500 rounded-2xl flex flex-col items-center justify-center p-1 text-slate-800 dark:text-slate-100 rotate-y-180 backface-hidden font-extrabold text-sm sm:text-base">
+                                        ${c.content}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function flipMemoryCard(idx) {
+            if (appState.flippedCards.length >= 2) return;
+            const cardEl = document.getElementById(`mem-card-${idx}`);
+            if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+
+            playAudioEffect('click');
+            cardEl.classList.add('flipped');
+            cardEl.querySelector('.mem-card-inner').style.transform = 'rotateY(180deg)';
+            appState.flippedCards.push({ idx, card: appState.memoryCards[idx] });
+
+            if (appState.flippedCards.length === 2) {
+                const [c1, c2] = appState.flippedCards;
+                appState.totalQuestions++;
+
+                if (c1.card.id === c2.card.id) {
+                    // Match!
+                    appState.correctAnswers++;
+                    addXP(15);
+                    playAudioEffect('correct');
+                    speakGermanText(c1.card.item.upper);
+
+                    document.getElementById(`mem-card-${c1.idx}`).classList.add('matched');
+                    document.getElementById(`mem-card-${c2.idx}`).classList.add('matched');
+                    appState.flippedCards = [];
+                    appState.matchedPairs++;
+
+                    if (appState.matchedPairs === 4) {
+                        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+                        showGameFeedback(true, "Mükemmel! Tüm hafıza kartlarını buldunuz!", () => initMemoryGame());
+                    }
+                } else {
+                    playAudioEffect('wrong');
+                    setTimeout(() => {
+                        document.getElementById(`mem-card-${c1.idx}`).querySelector('.mem-card-inner').style.transform = 'rotateY(0deg)';
+                        document.getElementById(`mem-card-${c2.idx}`).querySelector('.mem-card-inner').style.transform = 'rotateY(0deg)';
+                        document.getElementById(`mem-card-${c1.idx}`).classList.remove('flipped');
+                        document.getElementById(`mem-card-${c2.idx}`).classList.remove('flipped');
+                        appState.flippedCards = [];
+                    }, 900);
+                }
+                saveUserData();
+            }
+        }
+
+        function showGameFeedback(isSuccess, message, nextCallback) {
+            const arena = document.getElementById('game-arena');
+            const overlay = document.createElement('div');
+            overlay.className = "absolute inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20 space-y-4 animate-fade-in";
+            
+            overlay.innerHTML = `
+                <div class="w-16 h-16 rounded-full ${isSuccess ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'} flex items-center justify-center text-3xl font-black shadow-lg">
+                    ${isSuccess ? '✓' : '✕'}
+                </div>
+                <h4 class="text-xl font-bold ${isSuccess ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}">${message}</h4>
+                <button id="next-q-btn" class="py-3 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md spring-bounce">
+                    Sonraki Soru <i data-lucide="arrow-right" class="inline w-4 h-4 ml-1"></i>
+                </button>
+            `;
+
+            arena.appendChild(overlay);
+            lucide.createIcons();
+
+            document.getElementById('next-q-btn').onclick = () => {
+                overlay.remove();
+                nextCallback();
+            };
+        }
+
+        function addXP(amount) {
+            appState.xp += amount;
+            saveUserData();
+            updateHeaderAndProgressUI();
+        }
+
+        function updateHeaderAndProgressUI() {
+            document.getElementById('user-xp').innerText = `${appState.xp} XP`;
+            document.getElementById('user-streak').innerText = `${appState.streak} Gün`;
+            
+            const learnedCount = appState.learnedLetters.size;
+            const total = GERMAN_ALPHABET.length;
+            const percent = Math.round((learnedCount / total) * 100);
+
+            document.getElementById('learned-counter-badge').innerText = `${learnedCount}/${total} Öğrenildi`;
+            document.getElementById('stats-learned-count').innerText = learnedCount;
+            document.getElementById('progress-percent-text').innerText = `${percent}%`;
+
+            // Circle progress path dasharray
+            const path = document.getElementById('progress-circle-path');
+            if (path) {
+                path.setAttribute('stroke-dasharray', `${percent}, 100`);
+            }
+
+            // Accuracy & Stats
+            document.getElementById('stat-total-questions').innerText = appState.totalQuestions;
+            const accuracy = appState.totalQuestions > 0 ? Math.round((appState.correctAnswers / appState.totalQuestions) * 100) : 100;
+            document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+
+            // Level check
+            let levelTitle = "Acemi (A1.1)";
+            if (appState.xp > 150) levelTitle = "Çırak (A1.2)";
+            if (appState.xp > 300) levelTitle = "Alfabe Ustası (A1.3)";
+            document.getElementById('stat-level').innerText = levelTitle;
+
+            renderBadges();
+        }
+
+        function renderBadges() {
+            const container = document.getElementById('badges-container');
+            if (!container) return;
+
+            const badges = [
+                { title: 'İlk Harf', desc: 'İlk harfini öğrendin', unlocked: appState.learnedLetters.size >= 1, icon: 'star' },
+                { title: 'Almanca Dostu', desc: '10 Harf tamamlandı', unlocked: appState.learnedLetters.size >= 10, icon: 'heart' },
+                { title: 'Umlaut Uzmanı', desc: 'Ä, Ö, Ü, ß harflerini öğrendin', unlocked: ['ae','oe','ue','sz'].every(id => appState.learnedLetters.has(id)), icon: 'zap' },
+                { title: 'Alfabe Şampiyonu', desc: 'Tüm harfleri tamamladın', unlocked: appState.learnedLetters.size >= 30, icon: 'crown' }
+            ];
+
+            container.innerHTML = badges.map(b => `
+                <div class="p-3 rounded-2xl border ${b.unlocked ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/50 text-amber-800 dark:text-amber-300' : 'bg-slate-100/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-50'} flex items-center gap-2.5">
+                    <div class="p-2 rounded-xl ${b.unlocked ? 'bg-amber-500 text-white' : 'bg-slate-300 dark:bg-slate-700 text-slate-500'} shrink-0">
+                        <i data-lucide="${b.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-xs">${b.title}</div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400">${b.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function saveUserData() {
+            localStorage.setItem('deutsch_learned_v1', JSON.stringify(Array.from(appState.learnedLetters)));
+            localStorage.setItem('deutsch_xp_v1', appState.xp.toString());
+            localStorage.setItem('deutsch_streak_v1', appState.streak.toString());
+            localStorage.setItem('deutsch_speed_v1', appState.audioSpeed.toString());
+            localStorage.setItem('deutsch_total_q_v1', appState.totalQuestions.toString());
+            localStorage.setItem('deutsch_correct_q_v1', appState.correctAnswers.toString());
+        }
+
+        function resetUserProgress() {
+            if (confirm("Tüm ilerlemeniz sıfırlanacak. Emin misiniz?")) {
+                localStorage.clear();
+                appState.learnedLetters = new Set();
+                appState.xp = 0;
+                appState.totalQuestions = 0;
+                appState.correctAnswers = 0;
+                saveUserData();
+                renderAlphabetGrid();
+                updateHeaderAndProgressUI();
+            }
+        }
+
+        function switchTab(tabId) {
+            playAudioEffect('click');
+
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Unselect desktop buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+            });
+
+            // Show selected section
+            const targetSection = document.getElementById(`section-${tabId}`);
+            if (targetSection) targetSection.classList.remove('hidden');
+
+            // Active tab button style
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm";
+            }
+
+            // Mobile nav highlight
+            ['alphabet', 'rules', 'practice', 'stats'].forEach(t => {
+                const mobBtn = document.getElementById(`mobile-tab-${t}`);
+                if (mobBtn) {
+                    if (t === tabId) {
+                        mobBtn.className = "flex flex-col items-center gap-0.5 text-blue-600 dark:text-blue-400 font-bold";
+                    } else {
+                        mobBtn.className = "flex flex-col items-center gap-0.5 text-slate-500 dark:text-slate-400";
+                    }
+                }
+            });
+
+            if (tabId === 'practice' && !appState.currentQuestion) {
+                startPracticeMode('audio');
+            }
+        }
+
+        function filterLetters(category) {
+            playAudioEffect('click');
+            appState.activeFilter = category;
+
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.className = "filter-btn px-3.5 py-1.5 rounded-full text-xs font-medium transition bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700";
+            });
+
+            const activeBtn = document.getElementById(`filter-${category}`);
+            if (activeBtn) {
+                activeBtn.className = "filter-btn px-3.5 py-1.5 rounded-full text-xs font-bold transition bg-blue-600 text-white shadow-sm";
+            }
+
+            renderAlphabetGrid();
+        }
+
+        function toggleAudioSpeed() {
+            playAudioEffect('click');
+            if (appState.audioSpeed === 1.0) {
+                appState.audioSpeed = 0.7;
+            } else {
+                appState.audioSpeed = 1.0;
+            }
+            document.getElementById('speed-label').innerText = `${appState.audioSpeed}x`;
+            saveUserData();
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            playAudioEffect('click');
+        }
+
+        window.onload = function() {
+            renderAlphabetGrid();
+            renderRulesTab();
+            updateHeaderAndProgressUI();
+            
+            // Pre-warm SpeechSynthesis voice list
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.onvoiceschanged = () => {
+                    window.speechSynthesis.getVoices();
+                };
+            }
+        };
+    </script>
+</body>
+</html>
