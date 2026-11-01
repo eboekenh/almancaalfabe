@@ -169,8 +169,10 @@
             border-width: 0;
         }
     </style>
+<style id="_ltcss">#_ltbar{position:fixed;top:14px;right:16px;z-index:99999;display:flex;border-radius:8px;overflow:hidden;border:1.5px solid #6366f1;box-shadow:0 2px 10px rgba(0,0,0,.22);font-family:system-ui,sans-serif;}._ltb{padding:5px 13px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:#f8fafc;color:#6366f1;transition:.15s;}._ltb.on{background:#6366f1;color:#fff;}._ltb:hover:not(.on){background:#ede9fe;}</style>
 </head>
 <body class="text-slate-800 dark:text-slate-100 antialiased flex flex-col min-h-screen pb-24 md:pb-8">
+<div id="_ltbar"><button class="_ltb on" id="_ltbTR" onclick="_sl('tr')">TR</button><button class="_ltb" id="_ltbEN" onclick="_sl('en')">EN</button></div>
 
     <!-- ARIA Live Announcement Region for Screen Readers -->
     <div id="sr-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
@@ -1768,5 +1770,6 @@
             }
         });
     </script>
+<script id="_ltjs">(function(){var l=localStorage.getItem('_l')||'tr';function ap(x){document.documentElement.lang=x;document.documentElement.classList.toggle('lang-en',x==='en');var bT=document.getElementById('_ltbTR'),bE=document.getElementById('_ltbEN');if(bT)bT.className='_ltb'+(x==='tr'?' on':'');if(bE)bE.className='_ltb'+(x==='en'?' on':'');document.querySelectorAll('[data-i18n]').forEach(function(e){var v=(window._i18n&&window._i18n[x]||{})[e.dataset.i18n];if(v){if((e.tagName==='INPUT'||e.tagName==='TEXTAREA')&&'placeholder'in e)e.placeholder=v;else e.innerHTML=v;}});localStorage.setItem('_l',x);}window._sl=ap;document.addEventListener('DOMContentLoaded',function(){ap(l);});})();</script>
 </body>
 </html>
